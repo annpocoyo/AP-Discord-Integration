@@ -12,6 +12,16 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+
+	// Fzzy Config (and dependencies)
+	maven {
+		name = "FzzyMaven"
+		url = uri("https://maven.fzzyhmstrs.me/")
+	}
+	maven {
+		name = "Terraformers"
+		url = uri("https://maven.terraformersmc.com/")
+	}
 }
 
 dependencies {
@@ -21,6 +31,9 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation("net.fabricmc.fabric-api:fabric-api:${providers.gradleProperty("fabric_api_version").get()}")
+
+	// Fzzy Config
+	implementation("me.fzzyhmstrs:fzzy_config:${providers.gradleProperty("fzzy_config_version").get()}")
 }
 
 tasks.processResources {
