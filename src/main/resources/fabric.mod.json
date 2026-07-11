@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "ap-discord-integration",
+	"version": "${version}",
+	"name": "AP Discord Integration",
+	"description": "Link Minecraft and Discord chat!",
+	"authors": [
+		"annpocoyo"
+	],
+	"contact": {
+		"sources": "https://github.com/annpocoyo/ap-discord-integration"
+	},
+	"license": "ARR",
+	"icon": "assets/ap-discord-integration/icon.png",
+	"environment": "server",
+	"entrypoints": {
+		"main": [
+			"com.annpocoyo.apdiscordintegration.APDiscordIntegration"
+		]
+	},
+	"mixins": [
+		"ap-discord-integration.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
