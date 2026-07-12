@@ -1,6 +1,5 @@
 package com.annpocoyo.apdiscordintegration;
 
-import com.annpocoyo.apdiscordintegration.config.ConfigManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 
@@ -28,16 +27,8 @@ public class APDiscordIntegration implements ModInitializer {
 			return;
 		}
 
-		// Load Config
-		LOGGER.info("Loading Config...");
-		ConfigManager.init();
-
-		if (ConfigManager.mainConfig.general.botToken.getDefault().equals(ConfigManager.mainConfig.general.botToken.get())) {
-			LOGGER.error("A BOT TOKEN has not been provided! Please edit the config to include the bot token, then restart the server!");
-			LOGGER.error("Consult the wiki for more information! The mod will disable itself!");
-		}
-
-		LOGGER.info("Hello Fabric world!");
+		// Begin the bridge
+		SocialBridge.getInstance().start();
 	}
 
 	public static Identifier id(String path) {
