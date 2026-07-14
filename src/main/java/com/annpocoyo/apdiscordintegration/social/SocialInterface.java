@@ -1,37 +1,38 @@
 package com.annpocoyo.apdiscordintegration.social;
 
-import java.util.concurrent.CopyOnWriteArraySet;
+import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 
 /**
  * Abstraction layer for anything communicating with social platforms
  * Allows potential support of platforms other than Discord.
  */
 public interface SocialInterface {
-    /** Begin to send and receive events. */
-    void start();
+    /**
+     * Begin to prepare to receive and send events.
+     * @param handler Callback to handle events.
+     */
+    void start(SocialEventHandler handler);
 
-    // Events
-    /** Event called when ready to receive events and able to start sending events */
-    ReadyEvent getReadyEvent();
-    class ReadyEvent {
-        CopyOnWriteArraySet<Listener> listeners = new CopyOnWriteArraySet<>();
-        @FunctionalInterface
-        interface Listener {
-            void onEvent();
-        }
-
-        /** Call Event */
-        void invoke() {
-            listeners.forEach(Listener::onEvent);
-        }
-
+    @FunctionalInterface
+    interface SocialEventHandler {
         /**
-         * Register listener
-         * @param listener Listener to call on event
-         * @return {@code true} if a new listener was added, {@code false} if the listener was already registered!
+         * Called on a {@code SocialEvent}
+         *
+         * @param event Event that occurred.
+         * @return Was item added to queue successfully.
          */
-        boolean register(Listener listener) {
-            return listeners.add(listener);
-        }
+        boolean invoke(SocialEvent event);
     }
+
+    /**
+     * Send a message as the bot
+     * @param message The message to send
+     */
+    void sendMessage(String message);
+
+    /** Whether the interface is ready to receive events */
+    boolean isRunning();
+
+    /** Stop Bridge */
+    void stop();
 }

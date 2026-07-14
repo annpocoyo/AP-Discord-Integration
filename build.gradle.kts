@@ -34,6 +34,13 @@ dependencies {
 
 	// Fzzy Config
 	implementation("me.fzzyhmstrs:fzzy_config:${providers.gradleProperty("fzzy_config_version").get()}")
+
+	// JDA
+	implementation("net.dv8tion:JDA:${providers.gradleProperty("jda_version").get()}") { // replace $version with the latest version
+		// Exclude audio modules
+		exclude(module="opus-java") // required for encoding audio into opus, not needed if audio is already provided in opus encoding
+		exclude(module="tink") // required for encrypting and decrypting audio
+	}
 }
 
 tasks.processResources {
