@@ -6,6 +6,7 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStarte
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStartingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppedEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
+import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.commands.CommandSourceStack;
@@ -105,16 +106,16 @@ public class McInterfaceImpl implements McInterface {
     }
 
     // Util
-    private static McMessageEvent.ChatType convertBoundToType(ChatType.Bound bound) {
+    private static ChatFormat convertBoundToType(ChatType.Bound bound) {
         if (bound.chatType().is(ChatType.CHAT))
-            return McMessageEvent.ChatType.NORMAL;
+            return ChatFormat.NORMAL;
         else if (bound.chatType().is(ChatType.SAY_COMMAND))
-            return McMessageEvent.ChatType.SAY;
+            return ChatFormat.SAY;
         else if (bound.chatType().is(ChatType.EMOTE_COMMAND))
-            return McMessageEvent.ChatType.ME;
+            return ChatFormat.ME;
         else {
             LOGGER.warn("Unknown ChatType: {}, assuming that it is NORMAL", bound.chatType().getRegisteredName());
-            return McMessageEvent.ChatType.NORMAL;
+            return ChatFormat.NORMAL;
         }
     }
 

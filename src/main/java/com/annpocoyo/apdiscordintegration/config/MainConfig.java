@@ -26,6 +26,12 @@ public class MainConfig extends Config {
         public long channelId = 0;
     }
 
+    public Features features = new Features();
+    public static class Features extends ConfigSection {
+        @Comment("Whether or not to use Webhooks. The use of webhooks allows messages to appear to be from a BOT account that has the name (and face) of the player!")
+        public boolean useWebhooks = false;
+    }
+
     public Advanced advanced = new Advanced();
     public static class Advanced extends ConfigSection {
         @Comment("Disable auto bot configuration? Do not change unless you know what you're doing!")

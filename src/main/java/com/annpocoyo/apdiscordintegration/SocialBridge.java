@@ -16,6 +16,7 @@ import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialStartFail
 import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.discord.DiscordInterface;
+import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 
 import java.util.concurrent.*;
 
@@ -86,23 +87,24 @@ public class SocialBridge {
                     case ServerStartingEvent _ ->
                             socialInterface.setStatus(SocialInterface.StatusType.DND, "Starting...");
                     case ServerStartedEvent _ ->{
-                        socialInterface.sendServerMessage("Server Started");
+                        socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
                         socialInterface.setStatus(SocialInterface.StatusType.IDLE);
                     }
                     case ServerStoppingEvent _ -> {
-                        socialInterface.sendServerMessage("Server Stopping...", true);
+                        socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
                         socialInterface.setStatus(SocialInterface.StatusType.DND, "Stopping...");
                     }
                     case McMessageEvent event -> {
                         var message = event.getMessage();
                         var playerName = event.getPlayerName();
+                        var type = event.getType();
                         if (playerName.isEmpty())
-                            socialInterface.sendServerMessage(message);
+                            socialInterface.sendServerMessage(message, type);
                         else
-                            socialInterface.sendServerMessage("[%s] %s".formatted(playerName.orElseThrow(), message));
+                            socialInterface.sendPlayerMessage(message, playerName.orElseThrow(), type, null);
                     }
                     case McGameMessageEvent event ->
-                            socialInterface.sendServerMessage(event.getMessage());
+                            socialInterface.sendServerMessage(event.getMessage(), ChatFormat.GAME);
                     default ->
                             switchTriggered = false;
                 }
@@ -149,7 +151,7 @@ public class SocialBridge {
                 boolean switchTriggered = true;
                 switch (currentEvent) {
                     case SocialReadyEvent _ ->
-                            socialInterface.sendServerMessage("Server Starting...", true);
+                            socialInterface.sendServerMessage("Server Starting...", ChatFormat.GAME, true);
                     case SocialStartFailureEvent _ -> shutdownBridge();
                     default ->
                             switchTriggered = false;

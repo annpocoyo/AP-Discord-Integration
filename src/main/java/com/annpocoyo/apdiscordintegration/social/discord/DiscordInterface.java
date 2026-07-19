@@ -5,6 +5,7 @@ import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialNoChannelEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
+import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -18,8 +19,10 @@ import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
+import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,10 +67,6 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         jda.shutdown();
     }
     @Override
-    public void stop(String lastMessage) {
-        stop(lastMessage, false);
-    }
-    @Override
     public void stop(String lastMessage, boolean suppressed) {
         if (running.get()) {
             channel.sendMessage(lastMessage).setSuppressedNotifications(suppressed).complete();
@@ -76,10 +75,6 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     }
 
     // Interface Implementations
-    @Override
-    public void setStatus(StatusType type) {
-        setStatus(type, null);
-    }
     @Override
     public void setStatus(StatusType type, String message) {
         throwIfNotRunning();
@@ -95,13 +90,18 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     }
 
     @Override
-    public void sendServerMessage(String message) {
-        sendServerMessage(message, false);}
-    @Override
-    public void sendServerMessage(String message, boolean suppressed) {
+    public void sendServerMessage(String message, ChatFormat type, boolean suppressed) {
         throwIfNotRunning();
 
-        channel.sendMessage(message).setSuppressedNotifications(suppressed).queue();
+        channel.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setSuppressedNotifications(suppressed).queue();
+    }
+
+    @Override
+    public void sendPlayerMessage(String message, String name, ChatFormat type, @Nullable URI pfp, boolean suppressed) {
+        if (!ConfigManager.mainConfig.features.useWebhooks) {
+            channel.sendMessage(type.getFormatString().formatted(name, message)).setSuppressedNotifications(suppressed).queue();
+            return;
+        }
     }
 
     // Listeners
