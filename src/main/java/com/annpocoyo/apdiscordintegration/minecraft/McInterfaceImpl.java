@@ -6,7 +6,10 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStarte
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStartingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppedEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
+import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerJoined;
+import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.commands.CommandSourceStack;
@@ -47,6 +50,9 @@ public class McInterfaceImpl implements McInterface {
         ServerMessageEvents.CHAT_MESSAGE.register(this::chatMessage);
         ServerMessageEvents.COMMAND_MESSAGE.register(this::commandMessage);
         ServerMessageEvents.GAME_MESSAGE.register(this::gameMessage);
+        // Players
+        ServerPlayerEvents.JOIN.register(this::playerJoin);
+        ServerPlayerEvents.LEAVE.register(this::playerLeave);
     }
 
     @Override
@@ -61,6 +67,11 @@ public class McInterfaceImpl implements McInterface {
         Component component = Component.literal(message);
         sentMessages.add(component);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
+    }
+
+    @Override
+    public int getPlayerCount() {
+        return server.getPlayerCount();
     }
 
     // Listeners
@@ -99,6 +110,9 @@ public class McInterfaceImpl implements McInterface {
 
         handler.invoke(new McGameMessageEvent(component.getString()));
     }
+    // Players
+    private void playerJoin(ServerPlayer serverPlayer) {handler.invoke(new McPlayerJoined());}
+    private void playerLeave(ServerPlayer serverPlayer) {handler.invoke(new McPlayerLeaved());}
 
     @Override
     public boolean isRunning() {

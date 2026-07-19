@@ -30,6 +30,12 @@ public interface McInterface {
      */
     void sendMessage(String message);
 
+    /**
+     * Get the number of players online
+     * @return Number of players online
+     */
+    int getPlayerCount();
+
     /** Whether the interface is ready to receive events */
     boolean isRunning();
 

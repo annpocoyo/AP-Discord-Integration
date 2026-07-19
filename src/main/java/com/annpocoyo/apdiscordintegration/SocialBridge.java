@@ -10,6 +10,8 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStarte
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStartingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppedEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
+import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerCountChanged;
+import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialStartFailureEvent;
@@ -88,11 +90,20 @@ public class SocialBridge {
                             socialInterface.setStatus(SocialInterface.StatusType.DND, "Starting...");
                     case ServerStartedEvent _ ->{
                         socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
-                        socialInterface.setStatus(SocialInterface.StatusType.IDLE);
+                        socialInterface.setStatus(SocialInterface.StatusType.IDLE, "Just Started!");
                     }
                     case ServerStoppingEvent _ -> {
                         socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
                         socialInterface.setStatus(SocialInterface.StatusType.DND, "Stopping...");
+                    }
+                    case McPlayerCountChanged event when mcInterface.isRunning() -> {
+                        int playerCount = mcInterface.getPlayerCount();
+                        if (event instanceof McPlayerLeaved)
+                            playerCount -= 1;
+                        if (playerCount == 0)
+                            socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");
+                        else
+                            socialInterface.setStatus(SocialInterface.StatusType.ONLINE, "%s player(s) online!".formatted(playerCount));
                     }
                     case McMessageEvent event -> {
                         var message = event.getMessage();
