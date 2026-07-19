@@ -9,10 +9,7 @@ import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.SelfUser;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
@@ -35,6 +32,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     // Discord
     private volatile JDA jda;
     private volatile TextChannel channel;
+    private volatile Webhook webhook = null;
     private volatile SelfUser self;
     private volatile Presence presence;
 
@@ -102,6 +100,15 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
             channel.sendMessage(type.getFormatString().formatted(name, message)).setSuppressedNotifications(suppressed).queue();
             return;
         }
+
+        // 'DISCORD' and 'CLYDE' are disallowed to be contained within a webhook display name.
+        String parsedName = name.replaceAll("/Discord|Clyde/gi", "######");
+        if (!parsedName.equals(name))
+            LOGGER.warn("Username was censored due to containing a disallowed keyword (Original: {}, Censored: {})",
+                    message, parsedName);
+
+        webhook.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setUsername(name)
+                .setSuppressedNotifications(suppressed).queue();
     }
 
     // Listeners
@@ -125,6 +132,15 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         self = jda.getSelfUser();
         presence = jda.getPresence();
 
+        if (ConfigManager.mainConfig.features.useWebhooks) {
+            webhook = channel.retrieveWebhooks().complete().stream().filter(currentWebhook -> { // Find existing webhook
+                var owner = currentWebhook.getOwnerAsUser();
+                if (owner == null)
+                    return false;
+                return (owner.getIdLong() == self.getIdLong());
+            }).findFirst().orElseGet(() -> channel.createWebhook("AP Minecraft Bridge").complete()); // Create a new webhook if needed
+        }
+
         running.set(true);
         handler.invoke(new SocialReadyEvent());
     }
@@ -132,13 +148,14 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     // Listeners
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
-        if (event.getChannel().getIdLong() != channel.getIdLong())
-            return; // Different Channel
-        if (event.getAuthor().getIdLong() == self.getIdLong())
-            return; // Self sent message, don't want to relay forever.
-
         Message message = event.getMessage();
         User author = event.getAuthor();
+
+        if (event.getChannel().getIdLong() != channel.getIdLong())
+            return; // Different Channel
+        if (author.getIdLong() == self.getIdLong() ||
+                (ConfigManager.mainConfig.features.useWebhooks && webhook.getDefaultUser().getIdLong() == author.getIdLong()))
+            return; // Self sent message, don't want to relay forever.
 
         handler.invoke(new SocialMessageEvent(message.getContentStripped(),
                 author.getIdLong(), author.getName(), author.getEffectiveName()));

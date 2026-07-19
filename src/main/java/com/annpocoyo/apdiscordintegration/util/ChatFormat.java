@@ -6,8 +6,8 @@ package com.annpocoyo.apdiscordintegration.util;
 public enum ChatFormat {
     NORMAL("<%s> %s", "%s"),
     SAY("[%s] %s", "%s"),
-    ME("* %s %s", "*%s*"),
-    GAME("%s", "%s");
+    ME("\\* %s %s", "*%s*"),
+    GAME("> %s", "> %s");
 
     private final String formatString;
     private final String formatStringFromPlayer;

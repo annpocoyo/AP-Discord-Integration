@@ -191,6 +191,6 @@ public class SocialBridge {
 
         LOGGER.info("Signaling to other components...");
         mcInterface.stop();
-        socialInterface.stop("Server Stopped", true);
+        socialInterface.stop("> Server Stopped", true);
     }
 }
