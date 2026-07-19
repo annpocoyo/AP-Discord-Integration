@@ -23,6 +23,13 @@ public interface McInterface {
         boolean invoke(McEvent event);
     }
 
+    // Operations
+    /**
+     * Send a message directly to the MC chat
+     * @param message The message to send
+     */
+    void sendMessage(String message);
+
     /** Whether the interface is ready to receive events */
     boolean isRunning();
 
