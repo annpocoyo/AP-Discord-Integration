@@ -37,7 +37,6 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     private volatile Presence presence;
 
     // State
-    private final AtomicBoolean jdaObtained = new AtomicBoolean(false);
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     // Multipurpose executor
@@ -55,7 +54,6 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .setActivity(Activity.customStatus("Loading..."))
                 .build();
-        jdaObtained.set(true);
     }
     @Override
     public void stop() {
