@@ -28,7 +28,7 @@ public class MainConfig extends Config {
 
     public Features features = new Features();
     public static class Features extends ConfigSection {
-        @Comment("Whether to use Webhooks. The use of webhooks allows messages to appear to be from a BOT account that has the name (and face) of the player!")
+        @Comment("Whether to use Webhooks. The use of webhooks allows messages to appear to be from a BOT account that has the name of the player!")
         public boolean useWebhooks = true;
     }
 
