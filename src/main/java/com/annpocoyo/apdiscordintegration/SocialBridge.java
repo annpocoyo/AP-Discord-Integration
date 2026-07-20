@@ -129,7 +129,7 @@ public class SocialBridge {
 
             // Log unhandled events
             if (!eventHandled) {
-                LOGGER.warn("MC Event not handled (has the social service been connected to?): {}", currentEvent);
+                LOGGER.warn("MC Event not handled: {}", currentEvent);
             }
         }
     }
@@ -172,7 +172,7 @@ public class SocialBridge {
 
             // Log unhandled events
             if (!eventHandled) {
-                LOGGER.warn("Social Event not handled (has the server finished starting?): {}", currentEvent);
+                LOGGER.warn("Social Event not handled: {}", currentEvent);
             }
         }
     }
