@@ -65,7 +65,10 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     @Override
     public void stop(String lastMessage, boolean suppressed) {
         if (running.get()) {
-            channel.sendMessage(lastMessage).setSuppressedNotifications(suppressed).complete();
+            String message = ConfigManager.mainConfig.features.useWebhooks ?
+                    ChatFormat.GAME.getFormatStringFromPlayer().formatted("Server Stopped") :
+                    ChatFormat.GAME.getFormatString().formatted("Server", "Server Stopped");
+            channel.sendMessage(message).setSuppressedNotifications(suppressed).complete();
         }
         stop();
     }
@@ -89,13 +92,22 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     public void sendServerMessage(String message, ChatFormat type, boolean suppressed) {
         throwIfNotRunning();
 
-        channel.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setSuppressedNotifications(suppressed).queue();
+        // TODO: definitely take this into its own method (maybe inside of ChatFormat?).
+        String formattedMessage = ConfigManager.mainConfig.features.useWebhooks ?
+                (type.isForceNoWebhook() ? type.getFormatStringFromPlayer().formatted("Server", message) :
+                        type.getFormatStringFromPlayer().formatted(message)) :
+                type.getFormatString().formatted("Server", message);
+
+        channel.sendMessage(formattedMessage).setSuppressedNotifications(suppressed).queue();
     }
 
     @Override
     public void sendPlayerMessage(String message, String name, ChatFormat type, @Nullable URI pfp, boolean suppressed) {
-        if (!ConfigManager.mainConfig.features.useWebhooks) {
-            channel.sendMessage(type.getFormatString().formatted(name, message)).setSuppressedNotifications(suppressed).queue();
+        if (!ConfigManager.mainConfig.features.useWebhooks || type.isForceNoWebhook()) {
+            String formatString = ConfigManager.mainConfig.features.useWebhooks ?
+                    type.getFormatStringFromPlayer() :
+                    type.getFormatString();
+            channel.sendMessage(formatString.formatted(name, message)).setSuppressedNotifications(suppressed).queue();
             return;
         }
 
