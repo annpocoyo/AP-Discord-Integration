@@ -1,9 +1,9 @@
 package com.annpocoyo.apdiscordintegration;
 
 import com.annpocoyo.apdiscordintegration.config.ConfigManager;
-import com.annpocoyo.apdiscordintegration.minecraft.event.McEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.McInterface;
 import com.annpocoyo.apdiscordintegration.minecraft.McInterfaceImpl;
+import com.annpocoyo.apdiscordintegration.minecraft.event.McEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McGameMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStartedEvent;
@@ -12,15 +12,18 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppe
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerCountChanged;
 import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved;
+import com.annpocoyo.apdiscordintegration.social.SocialInterface;
+import com.annpocoyo.apdiscordintegration.social.discord.DiscordInterface;
+import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialStartFailureEvent;
-import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
-import com.annpocoyo.apdiscordintegration.social.SocialInterface;
-import com.annpocoyo.apdiscordintegration.social.discord.DiscordInterface;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
 

@@ -2,7 +2,7 @@ package com.annpocoyo.apdiscordintegration.social;
 
 import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
 
