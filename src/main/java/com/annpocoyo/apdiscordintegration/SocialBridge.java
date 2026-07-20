@@ -99,7 +99,7 @@ public class SocialBridge {
                     case McPlayerCountChanged event when mcInterface.isRunning() -> {
                         int playerCount = mcInterface.getPlayerCount();
                         if (event instanceof McPlayerLeaved)
-                            playerCount -= 1;
+                            playerCount -= 1; // The Player Leave event is triggered **before** the player count is updated, so we need to account for that
                         if (playerCount == 0)
                             socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");
                         else
