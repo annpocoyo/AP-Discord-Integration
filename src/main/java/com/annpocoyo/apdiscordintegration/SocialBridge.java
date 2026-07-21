@@ -90,14 +90,14 @@ public class SocialBridge {
                 boolean switchTriggered = true;
                 switch (currentEvent) {
                     case ServerStartingEvent _ ->
-                            socialInterface.setStatus(SocialInterface.StatusType.DND, "Starting...");
+                            socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Starting...");
                     case ServerStartedEvent _ ->{
                         socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
                         socialInterface.setStatus(SocialInterface.StatusType.IDLE, "Just Started!");
                     }
                     case ServerStoppingEvent _ -> {
                         socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
-                        socialInterface.setStatus(SocialInterface.StatusType.DND, "Stopping...");
+                        socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Stopping...");
                     }
                     case McPlayerCountChanged event when mcInterface.isRunning() -> {
                         int playerCount = mcInterface.getPlayerCount();

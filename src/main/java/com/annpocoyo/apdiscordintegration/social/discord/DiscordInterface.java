@@ -3,6 +3,7 @@ package com.annpocoyo.apdiscordintegration.social.discord;
 import com.annpocoyo.apdiscordintegration.config.ConfigManager;
 import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialInvalidTokenEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialNoChannelEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
@@ -13,6 +14,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -38,6 +40,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
 
     // State
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final AtomicBoolean jdaObtained = new AtomicBoolean(false);
 
     // Multipurpose executor
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -48,19 +51,27 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
 
         // Begin to connect to Discord
         LOGGER.info("Starting JDA...");
-        jda = JDABuilder.createLight(ConfigManager.mainConfig.general.botToken.get(),
-                        GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES)
-                .addEventListeners(this)
-                .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                .setActivity(Activity.customStatus("Loading..."))
-                .build();
+        try {
+            jda = JDABuilder.createLight(ConfigManager.mainConfig.general.botToken.get(),
+                            GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MESSAGES)
+                    .addEventListeners(this)
+                    .setStatus(OnlineStatus.DO_NOT_DISTURB)
+                    .setActivity(Activity.customStatus("Loading..."))
+                    .build();
+            jdaObtained.set(true);
+        } catch (InvalidTokenException _) {
+            LOGGER.error("The Discord Token provided is invalid, the bridge will not start!");
+            handler.invoke(new SocialInvalidTokenEvent());
+        }
     }
     @Override
     public void stop() {
         LOGGER.info("Shutting down JDA...");
         running.set(false);
         executor.shutdown();
-        jda.shutdown();
+        if (jdaObtained.get()) {
+            jda.shutdown();
+        }
     }
     @Override
     public void stop(String lastMessage, boolean suppressed) {
@@ -78,14 +89,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     public void setStatus(StatusType type, String message) {
         throwIfNotRunning();
 
-        var status = switch (type) {
-            case INVISIBLE -> OnlineStatus.INVISIBLE;
-            case DND -> OnlineStatus.DO_NOT_DISTURB;
-            case IDLE -> OnlineStatus.IDLE;
-            case ONLINE -> OnlineStatus.ONLINE;
-        };
-
-        executor.execute(() -> presence.setPresence(status, message != null ? Activity.customStatus(message) : null));
+        executor.execute(() -> presence.setPresence(OnlineStatus.valueOf(type.name()), message != null ? Activity.customStatus(message) : null));
     }
 
     @Override

@@ -81,7 +81,7 @@ public interface SocialInterface {
 
     enum StatusType {
         INVISIBLE,
-        DND,
+        DO_NOT_DISTURB,
         IDLE,
         ONLINE
     }
