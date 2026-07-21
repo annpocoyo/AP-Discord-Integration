@@ -52,9 +52,11 @@ dependencies {
 tasks.processResources {
 	val version = version
 	inputs.property("version", version)
+	val fabricApiVersion = providers.gradleProperty("fabric_api_version").get()
+	inputs.property("fabric_api_version", fabricApiVersion)
 
 	filesMatching("fabric.mod.json") {
-		expand("version" to version)
+		expand("version" to version, "fabric_api_version" to fabricApiVersion)
 	}
 }
 
