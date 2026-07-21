@@ -1,6 +1,7 @@
 plugins {
 	id("net.fabricmc.fabric-loom")
 	`maven-publish`
+	id("com.gradleup.shadow")
 }
 
 version = providers.gradleProperty("mod_version").get()
@@ -24,6 +25,11 @@ repositories {
 	}
 }
 
+val shade = configurations.create("shade")
+configurations.named("implementation") {
+	extendsFrom(shade)
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft("com.mojang:minecraft:${providers.gradleProperty("minecraft_version").get()}")
@@ -36,7 +42,7 @@ dependencies {
 	implementation("me.fzzyhmstrs:fzzy_config:${providers.gradleProperty("fzzy_config_version").get()}")
 
 	// JDA
-	implementation("net.dv8tion:JDA:${providers.gradleProperty("jda_version").get()}") { // replace $version with the latest version
+	shade("net.dv8tion:JDA:${providers.gradleProperty("jda_version").get()}") { // replace $version with the latest version
 		// Exclude audio modules
 		exclude(module="opus-java") // required for encoding audio into opus, not needed if audio is already provided in opus encoding
 		exclude(module="tink") // required for encrypting and decrypting audio
@@ -66,9 +72,35 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+tasks.shadowJar {
+	archiveClassifier.set("")
+
+	val projectName = project.name
+	inputs.property("projectName", projectName)
+
+	from("LICENSE") {
+		rename { "${it}_$projectName" }
+	}
+
+	configurations = listOf(shade)
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	exclude("META-INF")
+	mergeServiceFiles()
+	
+	// Relocations
+	relocate("net.dv8tion.jda", "${project.group}.shadow.jda")
+	relocate("okhttp3", "${project.group}.shadow.okhttp3")
+	relocate("okio", "${project.group}.shadow.okio")
+	relocate("org.jetbrains.annotations", "${project.group}.shadow.jetbrains.annotations")
+	relocate("org.intellij.lang.annotations", "${project.group}.shadow.intellij.lang.annotations")
+}
+
 tasks.jar {
 	val projectName = project.name
 	inputs.property("projectName", projectName)
+
+	// This is not the main one
+	archiveClassifier.set("dev")
 
 	from("LICENSE") {
 		rename { "${it}_$projectName" }
