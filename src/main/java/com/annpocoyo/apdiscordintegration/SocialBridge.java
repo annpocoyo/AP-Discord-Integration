@@ -11,7 +11,6 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStarti
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppedEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerCountChanged;
-import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved;
 import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.discord.DiscordInterface;
 import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
@@ -93,21 +92,14 @@ public class SocialBridge {
                             socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Starting...");
                     case ServerStartedEvent _ ->{
                         socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
-                        socialInterface.setStatus(SocialInterface.StatusType.IDLE, "Just Started!");
+                        mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
                     }
                     case ServerStoppingEvent _ -> {
                         socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
                         socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Stopping...");
                     }
-                    case McPlayerCountChanged event when mcInterface.isRunning() -> {
-                        int playerCount = mcInterface.getPlayerCount();
-                        if (event instanceof McPlayerLeaved)
-                            playerCount -= 1; // The Player Leave event is triggered **before** the player count is updated, so we need to account for that
-                        if (playerCount == 0)
-                            socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");
-                        else
-                            socialInterface.setStatus(SocialInterface.StatusType.ONLINE, "%s player(s) online!".formatted(playerCount));
-                    }
+                    case McPlayerCountChanged event when mcInterface.isRunning() ->
+                            setPlayerCountStatus(event.getNewPlayerCount());
                     case McMessageEvent event -> {
                         var message = event.getMessage();
                         var playerName = event.getPlayerName();
@@ -164,8 +156,14 @@ public class SocialBridge {
             {
                 boolean switchTriggered = true;
                 switch (currentEvent) {
-                    case SocialReadyEvent _ ->
+                    case SocialReadyEvent _ -> {
+                        if (!mcInterface.isRunning())
                             socialInterface.sendServerMessage("Server Starting...", ChatFormat.GAME, true);
+                        else {
+                            socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
+                            mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
+                        }
+                    }
                     case SocialStartFailureEvent _ -> shutdownBridge();
                     default ->
                             switchTriggered = false;
@@ -206,5 +204,13 @@ public class SocialBridge {
         LOGGER.info("Signaling to other components...");
         mcInterface.stop();
         socialInterface.stop("> Server Stopped", true);
+    }
+
+    // Util
+    private void setPlayerCountStatus(int playerCount) {
+        if (playerCount == 0)
+            socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");
+        else
+            socialInterface.setStatus(SocialInterface.StatusType.ONLINE, "%s player(s) online!".formatted(playerCount));
     }
 }

@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -70,8 +71,8 @@ public class McInterfaceImpl implements McInterface {
     }
 
     @Override
-    public int getPlayerCount() {
-        return server.getPlayerCount();
+    public CompletableFuture<Integer> getPlayerCount() {
+        return server.submit(() -> server.getPlayerCount());
     }
 
     // Listeners
@@ -111,8 +112,16 @@ public class McInterfaceImpl implements McInterface {
         handler.invoke(new McGameMessageEvent(component.getString()));
     }
     // Players
-    private void playerJoin(ServerPlayer serverPlayer) {handler.invoke(new McPlayerJoined());}
-    private void playerLeave(ServerPlayer serverPlayer) {handler.invoke(new McPlayerLeaved());}
+    private void playerJoin(ServerPlayer serverPlayer) {
+        handler.invoke(new McPlayerJoined(
+                server.getPlayerCount()
+        ));
+    }
+    private void playerLeave(ServerPlayer serverPlayer) {
+        handler.invoke(new McPlayerLeaved(
+                server.getPlayerCount() - 1 // Event is triggered before player count is updated, so account for that
+        ));
+    }
 
     @Override
     public boolean isRunning() {

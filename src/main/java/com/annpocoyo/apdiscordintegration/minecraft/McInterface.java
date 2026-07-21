@@ -2,6 +2,8 @@ package com.annpocoyo.apdiscordintegration.minecraft;
 
 import com.annpocoyo.apdiscordintegration.minecraft.event.McEvent;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Abstraction layer for anything contacting Minecraft
  * Intended to be used to facilitate future multi version support!
@@ -34,7 +36,7 @@ public interface McInterface {
      * Get the number of players online
      * @return Number of players online
      */
-    int getPlayerCount();
+    CompletableFuture<Integer> getPlayerCount();
 
     /** Whether the interface is ready to receive events */
     boolean isRunning();
