@@ -22,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -171,8 +172,11 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                 (ConfigManager.mainConfig.features.useWebhooks && webhook.getDefaultUser().getIdLong() == author.getIdLong()))
             return; // Self sent message, don't want to relay forever.
 
+        // We know that we can probably get a Member now
+        Member member = Objects.requireNonNull(event.getMember());
+
         handler.invoke(new SocialMessageEvent(message.getContentStripped(),
-                author.getIdLong(), author.getName(), author.getEffectiveName()));
+                author.getAsMention(), author.getName(), member.getEffectiveName()));
     }
 
     // State Getters

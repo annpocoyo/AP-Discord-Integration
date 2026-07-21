@@ -33,6 +33,15 @@ public interface McInterface {
     void sendMessage(String message);
 
     /**
+     * Send a message as a Social User to the MC chat
+     * @param username Username of user
+     * @param displayName Display Name of user
+     * @param mentionText Text that is used to mention the player
+     * @param message The message to send
+     */
+    void sendSocialMessage(String username, String displayName, String mentionText, String message);
+
+    /**
      * Get the number of players online
      * @return Number of players online
      */

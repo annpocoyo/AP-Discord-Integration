@@ -145,8 +145,9 @@ public class SocialBridge {
             if (mcInterface.isRunning()) {
                 boolean switchTriggered = true;
                 switch (currentEvent) {
-                    case SocialMessageEvent messageEvent ->
-                            mcInterface.sendMessage("[DISCORD] <%s> %s ".formatted(messageEvent.getDisplayName(), messageEvent.getMessage()));
+                    case SocialMessageEvent event ->
+                            mcInterface.sendSocialMessage(event.getUsername(), event.getDisplayName(),
+                                    event.getMentionID(), event.getMessage());
                     default ->
                         switchTriggered = false;
                 }

@@ -12,10 +12,9 @@ import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.network.chat.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -68,6 +67,44 @@ public class McInterfaceImpl implements McInterface {
         Component component = Component.literal(message);
         sentMessages.add(component);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
+    }
+
+    @Override
+    public void sendSocialMessage(String username, String displayName, String mentionText, String message) {
+        // Create components
+        Component discordTag = Component.literal("[Discord]")
+                .withStyle(ChatFormatting.BOLD)
+                .withColor(0x5865F2)
+                .withStyle(Style.EMPTY.withHoverEvent(
+                        new HoverEvent.ShowText(
+                                Component.literal("This message was ")
+                                        .append(Component.literal("bridged").withStyle(ChatFormatting.BOLD))
+                                        .append(" from Discord!")
+                        )
+                ));
+        Component socialName = Component.literal(displayName)
+                .withStyle(Style.EMPTY
+                        .withHoverEvent(new HoverEvent.ShowText(
+                                Component.literal("@" + username)
+                                        .append("\n")
+                                        .append(Component.literal("Click")
+                                                .withStyle(ChatFormatting.BOLD))
+                                        .append(" to ")
+                                        .append(Component.literal("mention")
+                                                .withStyle(ChatFormatting.ITALIC))
+                                        .append("!")
+                        ))
+                        .withClickEvent(new ClickEvent.SuggestCommand(mentionText + " "))
+                );
+        Component messageContents = Component.literal(message);
+
+        // Put them together and send
+        Component finalMessage = Component.empty()
+                .append(discordTag)
+                .append(" <").append(socialName).append("> ")
+                .append(messageContents);
+        sentMessages.add(finalMessage);
+        server.execute(() -> server.getPlayerList().broadcastSystemMessage(finalMessage, false));
     }
 
     @Override
