@@ -8,6 +8,7 @@ import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeReconnect
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialInvalidTokenEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialNoChannelEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialReadyEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialUnknownErrorEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -16,9 +17,11 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.*;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -65,6 +68,9 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         } catch (InvalidTokenException _) {
             LOGGER.error("The Discord Token provided is invalid, the bridge will not start!");
             handler.invoke(new SocialInvalidTokenEvent());
+        } catch (RuntimeException e) {
+            LOGGER.error("Unexpected error occurred while connecting to Discord: ",e);
+            handler.invoke(new SocialUnknownErrorEvent());
         }
     }
     @Override
