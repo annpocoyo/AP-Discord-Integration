@@ -15,14 +15,17 @@ import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.discord.DiscordInterface;
 import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
-import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
-import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialStartFailureEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeDisconnectEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeReconnectEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialReadyEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialStartFailureEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
 
@@ -34,6 +37,9 @@ public class SocialBridge {
     public static SocialBridge getInstance() {
         return INSTANCE;
     }
+
+    // State
+    private final AtomicBoolean shutDown = new AtomicBoolean(false);
 
     // Interfaces
     private final McInterface mcInterface = new McInterfaceImpl();
@@ -66,116 +72,102 @@ public class SocialBridge {
 
         // Begin processing
         LOGGER.info("Starting queue loop...");
-        mcQueueExecutor.submit(this::mcEventLoop);
-        socialQueueExecutor.submit(this::socialEventLoop);
+        mcQueueExecutor.submit(() -> loopWrapper(this::mcEventLoop, "MC Loop"));
+        socialQueueExecutor.submit(() -> loopWrapper(this::socialEventLoop, "Social Loop"));
     }
 
     // Loops
-    private void mcEventLoop() {
-        while (true) {
-            boolean eventHandled = false;
+    private void mcEventLoop() throws InterruptedException {
+        boolean eventHandled = false;
 
-            McEvent currentEvent;
-            try {
-                currentEvent = mcQueue.take();
-            } catch (InterruptedException e) {
-                // Probably asked to stop!
-                LOGGER.info("MC Event Loop interrupted!");
-                break;
+        McEvent currentEvent = mcQueue.take();
+
+        // Events that require Social Bridge
+        if (socialInterface.isRunning()) {
+            boolean switchTriggered = true;
+            switch (currentEvent) {
+                case ServerStartingEvent _ ->
+                        socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Starting...");
+                case ServerStartedEvent _ ->{
+                    socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
+                    mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
+                }
+                case ServerStoppingEvent _ -> {
+                    socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
+                    socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Stopping...");
+                }
+                case McPlayerCountChanged event when mcInterface.isRunning() ->
+                        setPlayerCountStatus(event.getNewPlayerCount());
+                case McMessageEvent event -> {
+                    var message = event.getMessage();
+                    var playerName = event.getPlayerName();
+                    var type = event.getType();
+                    if (playerName.isEmpty())
+                        socialInterface.sendServerMessage(message, type);
+                    else
+                        socialInterface.sendPlayerMessage(message, playerName.orElseThrow(), type, null);
+                }
+                case McGameMessageEvent event ->
+                        socialInterface.sendServerMessage(event.getMessage(), ChatFormat.GAME);
+                default ->
+                        switchTriggered = false;
             }
+            eventHandled = switchTriggered;
+        }
 
-            // Events that require Social Bridge
-            if (socialInterface.isRunning()) {
-                boolean switchTriggered = true;
-                switch (currentEvent) {
-                    case ServerStartingEvent _ ->
-                            socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Starting...");
-                    case ServerStartedEvent _ ->{
+        if (currentEvent instanceof ServerStoppedEvent) {
+            shutdownBridge();
+            eventHandled = true;
+        }
+
+        // Log unhandled events
+        if (!eventHandled) {
+            LOGGER.warn("MC Event not handled: {}", currentEvent);
+        }
+    }
+    private void socialEventLoop() throws InterruptedException {
+        boolean eventHandled = false;
+
+        SocialEvent currentEvent = socialQueue.take();
+
+        // Require MCInterface
+        if (mcInterface.isRunning()) {
+            boolean switchTriggered = true;
+            switch (currentEvent) {
+                case SocialMessageEvent event ->
+                        mcInterface.sendSocialMessage(event.getUsername(), event.getDisplayName(),
+                                event.getMentionID(), event.getMessage());
+                case BridgeDisconnectEvent _ ->
+                        mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_DISCONNECT);
+                case BridgeReconnectEvent _ ->
+                        mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_RECONNECT);
+                default ->
+                    switchTriggered = false;
+            }
+            eventHandled = switchTriggered;
+        }
+
+        {
+            boolean switchTriggered = true;
+            switch (currentEvent) {
+                case SocialReadyEvent _ -> {
+                    if (!mcInterface.isRunning())
+                        socialInterface.sendServerMessage("Server Starting...", ChatFormat.GAME, true);
+                    else {
                         socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
                         mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
                     }
-                    case ServerStoppingEvent _ -> {
-                        socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
-                        socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Stopping...");
-                    }
-                    case McPlayerCountChanged event when mcInterface.isRunning() ->
-                            setPlayerCountStatus(event.getNewPlayerCount());
-                    case McMessageEvent event -> {
-                        var message = event.getMessage();
-                        var playerName = event.getPlayerName();
-                        var type = event.getType();
-                        if (playerName.isEmpty())
-                            socialInterface.sendServerMessage(message, type);
-                        else
-                            socialInterface.sendPlayerMessage(message, playerName.orElseThrow(), type, null);
-                    }
-                    case McGameMessageEvent event ->
-                            socialInterface.sendServerMessage(event.getMessage(), ChatFormat.GAME);
-                    default ->
-                            switchTriggered = false;
                 }
-                eventHandled = switchTriggered;
-            }
-
-            if (currentEvent instanceof ServerStoppedEvent) {
-                shutdownBridge();
-                eventHandled = true;
-            }
-
-            // Log unhandled events
-            if (!eventHandled) {
-                LOGGER.warn("MC Event not handled: {}", currentEvent);
-            }
-        }
-    }
-    private void socialEventLoop() {
-        while (true) {
-            boolean eventHandled = false;
-
-            SocialEvent currentEvent;
-            try {
-                currentEvent = socialQueue.take();
-            } catch (InterruptedException e) {
-                // Probably asked to stop!
-                LOGGER.info("Social Event Loop interrupted!");
-                break;
-            }
-
-            // Require MCInterface
-            if (mcInterface.isRunning()) {
-                boolean switchTriggered = true;
-                switch (currentEvent) {
-                    case SocialMessageEvent event ->
-                            mcInterface.sendSocialMessage(event.getUsername(), event.getDisplayName(),
-                                    event.getMentionID(), event.getMessage());
-                    default ->
+                case SocialStartFailureEvent _ -> shutdownBridge();
+                default ->
                         switchTriggered = false;
-                }
-                eventHandled = switchTriggered;
             }
+            eventHandled = switchTriggered || eventHandled;
+        }
 
-            {
-                boolean switchTriggered = true;
-                switch (currentEvent) {
-                    case SocialReadyEvent _ -> {
-                        if (!mcInterface.isRunning())
-                            socialInterface.sendServerMessage("Server Starting...", ChatFormat.GAME, true);
-                        else {
-                            socialInterface.sendServerMessage("Server Started", ChatFormat.GAME);
-                            mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
-                        }
-                    }
-                    case SocialStartFailureEvent _ -> shutdownBridge();
-                    default ->
-                            switchTriggered = false;
-                }
-                eventHandled = switchTriggered || eventHandled;
-            }
-
-            // Log unhandled events
-            if (!eventHandled) {
-                LOGGER.warn("Social Event not handled: {}", currentEvent);
-            }
+        // Log unhandled events
+        if (!eventHandled) {
+            LOGGER.warn("Social Event not handled: {}", currentEvent);
         }
     }
 
@@ -197,17 +189,39 @@ public class SocialBridge {
 
     // Shutdown bridge
     private void shutdownBridge() {
-        LOGGER.info("Shutting down bridge...");
-        LOGGER.info("Stopping executors...");
-        mcQueueExecutor.shutdownNow();
-        socialQueueExecutor.shutdownNow();
+        if (shutDown.compareAndSet(false, true)) {
+            LOGGER.info("Shutting down bridge...");
+            LOGGER.info("Stopping executors...");
+            mcQueueExecutor.shutdownNow();
+            socialQueueExecutor.shutdownNow();
 
-        LOGGER.info("Signaling to other components...");
-        mcInterface.stop();
-        socialInterface.stop("> Server Stopped", true);
+            LOGGER.info("Signaling to other components...");
+            mcInterface.stop();
+            socialInterface.stop("> Server Stopped", true);
+        }
     }
 
     // Util
+    private void loopWrapper(InterruptableRunnable loopFunction, String name) {
+        try {
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                loopFunction.run();
+            }
+        } catch (InterruptedException _) {
+            LOGGER.info("Loop Wrapper (wraps: {}) interrupted", name);
+        } catch (RuntimeException e) {
+            LOGGER.error("An exception occurred in the Discord Bridge, shutting down bridge:", e);
+        } finally {
+            shutdownBridge();
+        }
+    }
+
+    @FunctionalInterface
+    private interface InterruptableRunnable {
+        void run() throws InterruptedException;
+    }
+
     private void setPlayerCountStatus(int playerCount) {
         if (playerCount == 0)
             socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");

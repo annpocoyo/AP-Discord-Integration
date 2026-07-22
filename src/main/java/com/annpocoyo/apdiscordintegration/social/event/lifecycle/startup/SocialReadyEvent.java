@@ -1,4 +1,4 @@
-package com.annpocoyo.apdiscordintegration.social.event.lifecycle;
+package com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup;
 
 import com.annpocoyo.apdiscordintegration.social.event.SocialEvent;
 

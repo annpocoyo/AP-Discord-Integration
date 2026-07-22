@@ -36,6 +36,18 @@ public class McInterfaceImpl implements McInterface {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final Set<Component> sentMessages = ConcurrentHashMap.newKeySet();
 
+    // Discord Tag
+    private final Component discordTag = Component.literal("[Discord]")
+            .withStyle(ChatFormatting.BOLD)
+            .withColor(0x5865F2)
+            .withStyle(Style.EMPTY.withHoverEvent(
+                    new HoverEvent.ShowText(
+                            Component.literal("This message was ")
+                                    .append(Component.literal("bridged").withStyle(ChatFormatting.BOLD))
+                                    .append(" from Discord!")
+                    )
+            ));
+
     @Override
     public void start(McEventHandler handler) {
         this.handler = handler;
@@ -57,6 +69,7 @@ public class McInterfaceImpl implements McInterface {
 
     @Override
     public void stop() {
+        this.handler = _ -> true;
     }
 
     // Operations
@@ -64,24 +77,49 @@ public class McInterfaceImpl implements McInterface {
     public void sendMessage(String message) {
         throwIfNotRunning();
 
-        Component component = Component.literal(message);
+        Component component = Component.empty()
+                .append(discordTag)
+                .append(" ")
+                .append(message);
+        sentMessages.add(component);
+        server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
+    }
+
+    @Override
+    public void sendSpecialMessage(SpecialMessageType type) {
+        throwIfNotRunning();
+        Component message;
+        switch (type) {
+            case BRIDGE_RECONNECT ->
+                    message = Component.literal("Bridge ")
+                            .append(Component.literal("Reconnected")
+                                    .withStyle(ChatFormatting.GREEN))
+                            .append("!");
+            case BRIDGE_DISCONNECT ->
+                    message = Component.literal("Bridge ")
+                            .append(Component.literal("Disconnected")
+                                    .withStyle(ChatFormatting.RED))
+                            .append("!");
+            default -> {
+                LOGGER.warn("Unknown Special Message Type: {}", type);
+                message = Component.literal("Unknown Message Type")
+                        .withStyle(ChatFormatting.ITALIC, ChatFormatting.DARK_GRAY);
+            }
+        }
+
+        Component component = Component.empty()
+                .append(discordTag)
+                .append(" ")
+                .append(message);
         sentMessages.add(component);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
     }
 
     @Override
     public void sendSocialMessage(String username, String displayName, String mentionText, String message) {
+        throwIfNotRunning();
+
         // Create components
-        Component discordTag = Component.literal("[Discord]")
-                .withStyle(ChatFormatting.BOLD)
-                .withColor(0x5865F2)
-                .withStyle(Style.EMPTY.withHoverEvent(
-                        new HoverEvent.ShowText(
-                                Component.literal("This message was ")
-                                        .append(Component.literal("bridged").withStyle(ChatFormatting.BOLD))
-                                        .append(" from Discord!")
-                        )
-                ));
         Component socialName = Component.literal(displayName)
                 .withStyle(Style.EMPTY
                         .withHoverEvent(new HoverEvent.ShowText(
@@ -109,6 +147,7 @@ public class McInterfaceImpl implements McInterface {
 
     @Override
     public CompletableFuture<Integer> getPlayerCount() {
+        throwIfNotRunning();
         return server.submit(() -> server.getPlayerCount());
     }
 
@@ -121,10 +160,10 @@ public class McInterfaceImpl implements McInterface {
         server = serverInstance;
     }
     private void serverStarted(MinecraftServer serverInstance) {
-        handler.invoke(new ServerStartedEvent());
-
         // Now we are running!
         running.set(true);
+
+        handler.invoke(new ServerStartedEvent());
     }
     private void serverStopping(MinecraftServer serverInstance) {
         // Now we are not running!

@@ -33,6 +33,17 @@ public interface McInterface {
     void sendMessage(String message);
 
     /**
+     * Sends a special message to the MC chat
+     * @param type Type of special message to send
+     */
+    void sendSpecialMessage(SpecialMessageType type);
+
+    enum SpecialMessageType {
+        BRIDGE_DISCONNECT,
+        BRIDGE_RECONNECT
+    }
+
+    /**
      * Send a message as a Social User to the MC chat
      * @param username Username of user
      * @param displayName Display Name of user

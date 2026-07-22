@@ -3,9 +3,11 @@ package com.annpocoyo.apdiscordintegration.social.discord;
 import com.annpocoyo.apdiscordintegration.config.ConfigManager;
 import com.annpocoyo.apdiscordintegration.social.SocialInterface;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
-import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialInvalidTokenEvent;
-import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialNoChannelEvent;
-import com.annpocoyo.apdiscordintegration.social.event.lifecycle.SocialReadyEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeDisconnectEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeReconnectEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialInvalidTokenEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialNoChannelEvent;
+import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialReadyEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -13,7 +15,7 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.*;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
@@ -34,6 +36,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     // Discord
     private volatile JDA jda;
     private volatile TextChannel channel;
+    private volatile long webhookId; // In case of cache invalidation
     private volatile Webhook webhook = null;
     private volatile SelfUser self;
     private volatile Presence presence;
@@ -72,6 +75,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         if (jdaObtained.get()) {
             jda.shutdown();
         }
+        this.handler = _ -> true;
     }
     @Override
     public void stop(String lastMessage, boolean suppressed) {
@@ -153,6 +157,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                     return false;
                 return (owner.getIdLong() == self.getIdLong());
             }).findFirst().orElseGet(() -> channel.createWebhook("AP Minecraft Bridge").complete()); // Create a new webhook if needed
+            webhookId = webhook.getIdLong();
         }
 
         running.set(true);
@@ -179,6 +184,29 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                 author.getAsMention(), author.getName(), effectiveName));
     }
 
+    @Override
+    public void onSessionDisconnect(@NonNull SessionDisconnectEvent event) {
+        handler.invoke(new BridgeDisconnectEvent());
+    }
+
+    @Override
+    public void onSessionInvalidate(@NonNull SessionInvalidateEvent event) {
+        LOGGER.info("Session invalidated, recreating objects...");
+        recreateObjects();
+    }
+
+    @Override
+    public void onSessionRecreate(@NonNull SessionRecreateEvent event) {
+        LOGGER.info("Session recreated, recreating objects...");
+        recreateObjects();
+        handler.invoke(new BridgeReconnectEvent());
+    }
+
+    @Override
+    public void onSessionResume(@NonNull SessionResumeEvent event) {
+        handler.invoke(new BridgeReconnectEvent());
+    }
+
     // State Getters
     @Override
     public boolean isRunning() {
@@ -189,5 +217,17 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     private void throwIfNotRunning() throws IllegalStateException {
         if (!isRunning())
             throw new IllegalStateException("Interface not running!");
+    }
+
+    private void recreateObjects() {
+        channel = jda.getTextChannelById(ConfigManager.mainConfig.general.channelId);
+        if (channel == null) {
+            LOGGER.error("The Channel ID is now invalid!? The bridge will shut down!");
+            handler.invoke(new SocialNoChannelEvent());
+            return;
+        }
+        webhook = jda.retrieveWebhookById(webhookId).complete();
+        self = jda.getSelfUser();
+        presence = jda.getPresence();
     }
 }
