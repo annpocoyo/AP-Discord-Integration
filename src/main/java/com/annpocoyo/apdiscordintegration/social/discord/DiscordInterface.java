@@ -17,11 +17,9 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.*;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
-import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.jspecify.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -47,6 +45,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     // State
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean jdaObtained = new AtomicBoolean(false);
+    private final AtomicBoolean disconnected = new AtomicBoolean(false);
 
     // Multipurpose executor
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -85,13 +84,16 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     }
     @Override
     public void stop(String lastMessage, boolean suppressed) {
-        if (running.get()) {
-            String message = ConfigManager.mainConfig.features.useWebhooks ?
-                    ChatFormat.GAME.getFormatStringFromPlayer().formatted("Server Stopped") :
-                    ChatFormat.GAME.getFormatString().formatted("Server", "Server Stopped");
-            channel.sendMessage(message).setSuppressedNotifications(suppressed).complete();
+        try {
+            if (running.get()) {
+                String message = ConfigManager.mainConfig.features.useWebhooks ?
+                        ChatFormat.GAME.getFormatStringFromPlayer().formatted("Server Stopped") :
+                        ChatFormat.GAME.getFormatString().formatted("Server", "Server Stopped");
+                channel.sendMessage(message).setSuppressedNotifications(suppressed).complete();
+            }
+        } finally {
+            stop();
         }
-        stop();
     }
 
     // Interface Implementations
@@ -192,17 +194,27 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
 
     @Override
     public void onSessionDisconnect(@NonNull SessionDisconnectEvent event) {
-        handler.invoke(new BridgeDisconnectEvent());
+        if (disconnected.compareAndSet(false, true)) {
+            handler.invoke(new BridgeDisconnectEvent());
+        }
     }
 
     @Override
     public void onSessionInvalidate(@NonNull SessionInvalidateEvent event) {
+        if (disconnected.get()) {
+            LOGGER.warn("Session Invalidated whilest disconnected!");
+            return;
+        }
+
         LOGGER.info("Session invalidated, recreating objects...");
         recreateObjects();
     }
 
     @Override
     public void onSessionRecreate(@NonNull SessionRecreateEvent event) {
+        if (!disconnected.compareAndSet(true, false))
+            return;
+
         LOGGER.info("Session recreated, recreating objects...");
         recreateObjects();
         handler.invoke(new BridgeReconnectEvent());
@@ -210,6 +222,9 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
 
     @Override
     public void onSessionResume(@NonNull SessionResumeEvent event) {
+        if (!disconnected.compareAndSet(true, false))
+            return;
+
         handler.invoke(new BridgeReconnectEvent());
     }
 

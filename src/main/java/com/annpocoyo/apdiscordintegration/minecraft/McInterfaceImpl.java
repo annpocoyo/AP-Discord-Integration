@@ -42,9 +42,9 @@ public class McInterfaceImpl implements McInterface {
             .withColor(0x5865F2)
             .withStyle(Style.EMPTY.withHoverEvent(
                     new HoverEvent.ShowText(
-                            Component.literal("This message was ")
-                                    .append(Component.literal("bridged").withStyle(ChatFormatting.BOLD))
-                                    .append(" from Discord!")
+                            Component.literal("This message is from the ")
+                                    .append(Component.literal("Discord Bridge").withStyle(ChatFormatting.BOLD))
+                                    .append("!")
                     )
             ));
 
@@ -94,12 +94,28 @@ public class McInterfaceImpl implements McInterface {
                     message = Component.literal("Bridge ")
                             .append(Component.literal("Reconnected")
                                     .withStyle(ChatFormatting.GREEN))
-                            .append("!");
+                            .append("!")
+                            .withStyle(Style.EMPTY
+                                    .withHoverEvent(new HoverEvent.ShowText(
+                                            Component.literal("Messages are ")
+                                                    .append(Component.literal("now")
+                                                            .withStyle(ChatFormatting.BOLD))
+                                                    .append(" being bridged to the other side again!")
+                                    ))
+                            );
             case BRIDGE_DISCONNECT ->
                     message = Component.literal("Bridge ")
                             .append(Component.literal("Disconnected")
                                     .withStyle(ChatFormatting.RED))
-                            .append("!");
+                            .append("!")
+                            .withStyle(Style.EMPTY
+                                    .withHoverEvent(new HoverEvent.ShowText(
+                                            Component.literal("Messages are ")
+                                                    .append(Component.literal("no longer")
+                                                            .withStyle(ChatFormatting.BOLD))
+                                                    .append(" being bridged to the other side!")
+                                    ))
+                            );
             default -> {
                 LOGGER.warn("Unknown Special Message Type: {}", type);
                 message = Component.literal("Unknown Message Type")

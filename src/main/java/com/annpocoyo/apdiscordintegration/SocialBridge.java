@@ -139,8 +139,11 @@ public class SocialBridge {
                                 event.getMentionID(), event.getMessage());
                 case BridgeDisconnectEvent _ ->
                         mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_DISCONNECT);
-                case BridgeReconnectEvent _ ->
-                        mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_RECONNECT);
+                case BridgeReconnectEvent _ -> {
+                    socialInterface.sendServerMessage("Bridge Reconnected", ChatFormat.GAME);
+                    mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_RECONNECT);
+                    mcInterface.getPlayerCount().thenAccept(this::setPlayerCountStatus);
+                }
                 default ->
                     switchTriggered = false;
             }
