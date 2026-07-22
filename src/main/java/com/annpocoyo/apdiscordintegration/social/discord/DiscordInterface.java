@@ -2,6 +2,8 @@ package com.annpocoyo.apdiscordintegration.social.discord;
 
 import com.annpocoyo.apdiscordintegration.config.ConfigManager;
 import com.annpocoyo.apdiscordintegration.social.SocialInterface;
+import com.annpocoyo.apdiscordintegration.social.entities.SocialMessage;
+import com.annpocoyo.apdiscordintegration.social.entities.SocialUser;
 import com.annpocoyo.apdiscordintegration.social.event.SocialMessageEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeDisconnectEvent;
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.BridgeReconnectEvent;
@@ -188,8 +190,25 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         Member member = event.getMember();
         String effectiveName = member != null ? member.getEffectiveName() : author.getEffectiveName();
 
-        handler.invoke(new SocialMessageEvent(message.getContentStripped(),
-                author.getAsMention(), author.getName(), effectiveName));
+        // Handle Replies
+        SocialMessage replyMessage = null;
+        MessageReference messageReference = message.getMessageReference();
+        if (messageReference != null) {
+            Message resolvedMessage = messageReference.resolve().complete();
+            User replyAuthor = resolvedMessage.getAuthor();
+
+            Member replyMember = resolvedMessage.getMember();
+            String replyEffectiveName = replyMember != null ? replyMember.getEffectiveName() : replyAuthor.getEffectiveName();
+
+            replyMessage = new SocialMessage(resolvedMessage.getContentStripped(),
+                    new SocialUser(replyAuthor.getAsMention(), replyAuthor.getName(), replyEffectiveName, replyAuthor.isBot()),
+                    null);
+        }
+
+        SocialMessage socialMessage = new SocialMessage(message.getContentStripped(),
+                new SocialUser(author.getAsMention(), author.getName(), effectiveName, author.isBot()),
+                replyMessage);
+        handler.invoke(new SocialMessageEvent(socialMessage));
     }
 
     @Override

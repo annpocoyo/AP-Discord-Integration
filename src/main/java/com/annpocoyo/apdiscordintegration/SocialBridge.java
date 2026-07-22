@@ -135,8 +135,7 @@ public class SocialBridge {
             boolean switchTriggered = true;
             switch (currentEvent) {
                 case SocialMessageEvent event ->
-                        mcInterface.sendSocialMessage(event.getUsername(), event.getDisplayName(),
-                                event.getMentionID(), event.getMessage());
+                        mcInterface.sendSocialMessage(event.getMessage());
                 case BridgeDisconnectEvent _ ->
                         mcInterface.sendSpecialMessage(McInterface.SpecialMessageType.BRIDGE_DISCONNECT);
                 case BridgeReconnectEvent _ -> {

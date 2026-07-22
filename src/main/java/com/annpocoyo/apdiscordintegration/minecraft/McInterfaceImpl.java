@@ -8,6 +8,8 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppe
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStoppingEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerJoined;
 import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved;
+import com.annpocoyo.apdiscordintegration.social.entities.SocialMessage;
+import com.annpocoyo.apdiscordintegration.social.entities.SocialUser;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -17,6 +19,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Objects;
 import java.util.Set;
@@ -36,14 +39,23 @@ public class McInterfaceImpl implements McInterface {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final Set<Component> sentMessages = ConcurrentHashMap.newKeySet();
 
-    // Discord Tag
-    private final Component discordTag = Component.literal("[Discord]")
+    // Message Components
+    private final static Component discordTag = Component.literal("[Discord]")
             .withStyle(ChatFormatting.BOLD)
             .withColor(0x5865F2)
             .withStyle(Style.EMPTY.withHoverEvent(
                     new HoverEvent.ShowText(
                             Component.literal("This message is from the ")
                                     .append(Component.literal("Discord Bridge").withStyle(ChatFormatting.BOLD))
+                                    .append("!")
+                    )
+            ));
+    private final static Component botTag = Component.literal("{BOT}")
+            .withColor(TextColor.AQUA)
+            .withStyle(Style.EMPTY.withHoverEvent(
+                    new HoverEvent.ShowText(
+                            Component.literal("This message was sent by a ")
+                                    .append(Component.literal("BOT").withStyle(ChatFormatting.BOLD))
                                     .append("!")
                     )
             ));
@@ -132,30 +144,32 @@ public class McInterfaceImpl implements McInterface {
     }
 
     @Override
-    public void sendSocialMessage(String username, String displayName, String mentionText, String message) {
+    public void sendSocialMessage(SocialMessage message) {
         throwIfNotRunning();
 
         // Create components
-        Component socialName = Component.literal(displayName)
-                .withStyle(Style.EMPTY
-                        .withHoverEvent(new HoverEvent.ShowText(
-                                Component.literal("@" + username)
-                                        .append("\n")
-                                        .append(Component.literal("Click")
-                                                .withStyle(ChatFormatting.BOLD))
-                                        .append(" to ")
-                                        .append(Component.literal("mention")
-                                                .withStyle(ChatFormatting.ITALIC))
-                                        .append("!")
-                        ))
-                        .withClickEvent(new ClickEvent.SuggestCommand(mentionText + " "))
-                );
-        Component messageContents = Component.literal(message);
+        Component socialName = convertSocialUserComponent(message.getAuthor());
+        Component messageContents = Component.literal(message.getMessage());
+
+        // Replies
+        Component replyMessageComponent = Component.empty();
+        if (message.getReplyMessage().isPresent()) {
+            SocialMessage replyMessage = message.getReplyMessage().orElseThrow();
+            Component replySocialName = convertSocialUserComponent(replyMessage.getAuthor());
+
+            replyMessageComponent = Component.empty()
+                    .append(Component.literal("(In reply to <")
+                            .withColor(TextColor.GRAY))
+                    .append(replySocialName)
+                    .append(Component.literal(">) ")
+                            .withColor(TextColor.GRAY));
+        }
 
         // Put them together and send
         Component finalMessage = Component.empty()
                 .append(discordTag)
                 .append(" <").append(socialName).append("> ")
+                .append(replyMessageComponent)
                 .append(messageContents);
         sentMessages.add(finalMessage);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(finalMessage, false));
@@ -232,6 +246,24 @@ public class McInterfaceImpl implements McInterface {
             LOGGER.warn("Unknown ChatType: {}, assuming that it is NORMAL", bound.chatType().getRegisteredName());
             return ChatFormat.NORMAL;
         }
+    }
+
+    private static @NonNull MutableComponent convertSocialUserComponent(SocialUser author) {
+        return Component.literal(author.displayName())
+                .withStyle(Style.EMPTY
+                        .withHoverEvent(new HoverEvent.ShowText(
+                                Component.literal("@" + author.username())
+                                        .append("\n")
+                                        .append(Component.literal("Click")
+                                                .withStyle(ChatFormatting.BOLD))
+                                        .append(" to ")
+                                        .append(Component.literal("mention")
+                                                .withStyle(ChatFormatting.ITALIC))
+                                        .append("!")
+                        ))
+                        .withClickEvent(new ClickEvent.SuggestCommand(author.mentionID() + " "))
+                )
+                .append(author.isBot() ? Component.literal(" ").append(botTag) : Component.empty());
     }
 
     private void throwIfNotRunning() throws IllegalStateException {

@@ -1,6 +1,7 @@
 package com.annpocoyo.apdiscordintegration.minecraft;
 
 import com.annpocoyo.apdiscordintegration.minecraft.event.McEvent;
+import com.annpocoyo.apdiscordintegration.social.entities.SocialMessage;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -45,12 +46,9 @@ public interface McInterface {
 
     /**
      * Send a message as a Social User to the MC chat
-     * @param username Username of user
-     * @param displayName Display Name of user
-     * @param mentionText Text that is used to mention the player
-     * @param message The message to send
+     * @param message Social Message object to send
      */
-    void sendSocialMessage(String username, String displayName, String mentionText, String message);
+    void sendSocialMessage(SocialMessage message);
 
     /**
      * Get the number of players online
