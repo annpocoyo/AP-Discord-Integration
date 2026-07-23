@@ -180,10 +180,11 @@ public class McInterfaceImpl implements McInterface {
     // Listeners
     // Server Lifecycle Events
     private void serverStarting(MinecraftServer serverInstance) {
-        handler.invoke(new ServerStartingEvent());
-
         // Store Minecraft Server for future access
         server = serverInstance;
+
+        handler.invoke(new ServerStartingEvent());
+
     }
     private void serverStarted(MinecraftServer serverInstance) {
         // Now we are running!

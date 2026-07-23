@@ -226,6 +226,9 @@ public class SocialBridge {
     }
 
     private void setPlayerCountStatus(int playerCount) {
+        if (!socialInterface.isRunning())
+            return;
+
         if (playerCount == 0)
             socialInterface.setStatus(SocialInterface.StatusType.IDLE, "No one's online!");
         else
