@@ -22,9 +22,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
@@ -37,7 +35,6 @@ public class McInterfaceImpl implements McInterface {
 
     // State
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private final Set<Component> sentMessages = ConcurrentHashMap.newKeySet();
 
     // Message Components
     private final static Component discordTag = Component.literal("[Discord]")
@@ -93,7 +90,6 @@ public class McInterfaceImpl implements McInterface {
                 .append(discordTag)
                 .append(" ")
                 .append(message);
-        sentMessages.add(component);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
     }
 
@@ -139,7 +135,6 @@ public class McInterfaceImpl implements McInterface {
                 .append(discordTag)
                 .append(" ")
                 .append(message);
-        sentMessages.add(component);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(component, false));
     }
 
@@ -171,7 +166,6 @@ public class McInterfaceImpl implements McInterface {
                 .append(" <").append(socialName).append("> ")
                 .append(replyMessageComponent)
                 .append(messageContents);
-        sentMessages.add(finalMessage);
         server.execute(() -> server.getPlayerList().broadcastSystemMessage(finalMessage, false));
     }
 
@@ -212,7 +206,7 @@ public class McInterfaceImpl implements McInterface {
         handler.invoke(new McMessageEvent(playerChatMessage.signedContent(), convertBoundToType(bound), playerName));
     }
     private void gameMessage(MinecraftServer minecraftServer, Component component, boolean overlay) {
-        if (sentMessages.remove(component))
+        if (component.contains(discordTag))
             return; // Don't infinitely relay bridged messages
 
         handler.invoke(new McGameMessageEvent(component.getString()));
