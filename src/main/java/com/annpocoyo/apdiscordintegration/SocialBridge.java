@@ -21,10 +21,7 @@ import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialR
 import com.annpocoyo.apdiscordintegration.social.event.lifecycle.startup.SocialStartFailureEvent;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
@@ -193,16 +190,18 @@ public class SocialBridge {
 
     // Shutdown bridge
     private void shutdownBridge() {
-        if (shutDown.compareAndSet(false, true)) {
-            LOGGER.info("Shutting down bridge...");
-            LOGGER.info("Stopping executors...");
-            mcQueueExecutor.shutdownNow();
-            socialQueueExecutor.shutdownNow();
+        CompletableFuture.runAsync( () -> {
+            if (shutDown.compareAndSet(false, true)) {
+                LOGGER.info("Shutting down bridge...");
+                LOGGER.info("Stopping executors...");
+                mcQueueExecutor.shutdownNow();
+                socialQueueExecutor.shutdownNow();
 
-            LOGGER.info("Signaling to other components...");
-            mcInterface.stop();
-            socialInterface.stop("> Server Stopped", true);
-        }
+                LOGGER.info("Signaling to other components...");
+                mcInterface.stop();
+                socialInterface.stop("> Server Stopped", true);
+            }
+        });
     }
 
     // Util
