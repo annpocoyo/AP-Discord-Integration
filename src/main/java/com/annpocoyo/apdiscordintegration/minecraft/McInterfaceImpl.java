@@ -219,11 +219,13 @@ public class McInterfaceImpl implements McInterface {
     }
     // Players
     private void playerJoin(ServerPlayer serverPlayer) {
+        if (!running.get()) return;
         handler.invoke(new McPlayerJoined(
                 server.getPlayerCount()
         ));
     }
     private void playerLeave(ServerPlayer serverPlayer) {
+        if (!running.get()) return;
         handler.invoke(new McPlayerLeaved(
                 server.getPlayerCount() - 1 // Event is triggered before player count is updated, so account for that
         ));
