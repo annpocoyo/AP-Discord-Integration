@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.*;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.exceptions.RateLimitedException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -197,7 +198,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         String effectiveName = member != null ? member.getEffectiveName() : author.getEffectiveName();
 
         // Handle Replies
-        SocialMessage replyMessage;
+        SocialMessage replyMessage = null;
         MessageReference messageReference = message.getMessageReference();
         if (messageReference != null) {
             try {
@@ -210,11 +211,12 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                 replyMessage = new SocialMessage(resolvedMessage.getContentStripped(),
                         new SocialUser(replyAuthor.getAsMention(), replyAuthor.getName(), replyEffectiveName, replyAuthor.isBot()),
                         null);
+            } catch (InsufficientPermissionException _) {
+                LOGGER.warn("Missing permission to access MESSAGE_HISTORY, cannot resolve reply, falling back to assuming message isn't a reply");
             } catch (ErrorResponseException e) {
                 LOGGER.warn("Failed to get message replied to (is it deleted now?), falling back to assuming message isn't a reply", e);
-                replyMessage = null;
             }
-        } else replyMessage = null;
+        }
 
         SocialMessage socialMessage = new SocialMessage(message.getContentStripped(),
                 new SocialUser(author.getAsMention(), author.getName(), effectiveName, author.isBot()),
