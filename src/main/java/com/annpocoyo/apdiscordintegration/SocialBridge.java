@@ -96,8 +96,10 @@ public class SocialBridge {
                     socialInterface.sendServerMessage("Server Stopping...", ChatFormat.GAME, true);
                     socialInterface.setStatus(SocialInterface.StatusType.DO_NOT_DISTURB, "Stopping...");
                 }
-                case McPlayerCountChanged event when mcInterface.isRunning() ->
+                case McPlayerCountChanged event -> {
+                    if (mcInterface.isRunning())
                         setPlayerCountStatus(event.getNewPlayerCount());
+                }
                 case McMessageEvent event -> {
                     var message = event.getMessage();
                     var playerName = event.getPlayerName();
