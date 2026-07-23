@@ -11,6 +11,7 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved
 import com.annpocoyo.apdiscordintegration.social.entities.SocialMessage;
 import com.annpocoyo.apdiscordintegration.social.entities.SocialUser;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
+import com.annpocoyo.apdiscordintegration.util.GlobalTellRawEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
@@ -71,6 +72,7 @@ public class McInterfaceImpl implements McInterface {
         ServerMessageEvents.CHAT_MESSAGE.register(this::chatMessage);
         ServerMessageEvents.COMMAND_MESSAGE.register(this::commandMessage);
         ServerMessageEvents.GAME_MESSAGE.register(this::gameMessage);
+        GlobalTellRawEvent.register(this::tellRawMessage);
         // Players
         ServerPlayerEvents.JOIN.register(this::playerJoin);
         ServerPlayerEvents.LEAVE.register(this::playerLeave);
@@ -209,6 +211,9 @@ public class McInterfaceImpl implements McInterface {
         if (component.contains(discordTag))
             return; // Don't infinitely relay bridged messages
 
+        handler.invoke(new McGameMessageEvent(component.getString()));
+    }
+    private void tellRawMessage(Component component, CommandSourceStack commandSourceStack) {
         handler.invoke(new McGameMessageEvent(component.getString()));
     }
     // Players
