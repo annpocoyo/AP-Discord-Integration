@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.*;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
 import net.dv8tion.jda.api.exceptions.RateLimitedException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -196,19 +197,24 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         String effectiveName = member != null ? member.getEffectiveName() : author.getEffectiveName();
 
         // Handle Replies
-        SocialMessage replyMessage = null;
+        SocialMessage replyMessage;
         MessageReference messageReference = message.getMessageReference();
         if (messageReference != null) {
-            Message resolvedMessage = messageReference.resolve().complete();
-            User replyAuthor = resolvedMessage.getAuthor();
+            try {
+                Message resolvedMessage = messageReference.resolve().complete();
+                User replyAuthor = resolvedMessage.getAuthor();
 
-            Member replyMember = resolvedMessage.getMember();
-            String replyEffectiveName = replyMember != null ? replyMember.getEffectiveName() : replyAuthor.getEffectiveName();
+                Member replyMember = resolvedMessage.getMember();
+                String replyEffectiveName = replyMember != null ? replyMember.getEffectiveName() : replyAuthor.getEffectiveName();
 
-            replyMessage = new SocialMessage(resolvedMessage.getContentStripped(),
-                    new SocialUser(replyAuthor.getAsMention(), replyAuthor.getName(), replyEffectiveName, replyAuthor.isBot()),
-                    null);
-        }
+                replyMessage = new SocialMessage(resolvedMessage.getContentStripped(),
+                        new SocialUser(replyAuthor.getAsMention(), replyAuthor.getName(), replyEffectiveName, replyAuthor.isBot()),
+                        null);
+            } catch (ErrorResponseException e) {
+                LOGGER.warn("Failed to get message replied to (is it deleted now?), falling back to assuming message isn't a reply", e);
+                replyMessage = null;
+            }
+        } else replyMessage = null;
 
         SocialMessage socialMessage = new SocialMessage(message.getContentStripped(),
                 new SocialUser(author.getAsMention(), author.getName(), effectiveName, author.isBot()),
