@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.*;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
+import net.dv8tion.jda.api.exceptions.RateLimitedException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.managers.Presence;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -78,9 +79,9 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     public void stop() {
         LOGGER.info("Shutting down JDA...");
         running.set(false);
-        executor.shutdown();
+        executor.shutdownNow();
         if (jdaObtained.get()) {
-            jda.shutdown();
+            jda.shutdownNow();
         }
         this.handler = _ -> true;
     }
@@ -91,8 +92,12 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
                 String message = ConfigManager.mainConfig.features.useWebhooks ?
                         ChatFormat.GAME.getFormatStringFromPlayer().formatted("Server Stopped") :
                         ChatFormat.GAME.getFormatString().formatted("Server", "Server Stopped");
-                channel.sendMessage(message).setSuppressedNotifications(suppressed).complete();
+                channel.sendMessage(message).setSuppressedNotifications(suppressed).complete(false); // Send Immediately
             }
+        } catch (RateLimitedException _) {
+            LOGGER.warn("Server Stopped Message was rate limited");
+        } catch (RuntimeException e) {
+            LOGGER.warn("Unknown exception occurred while sending last message: ", e);
         } finally {
             stop();
         }
