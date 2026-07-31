@@ -3,6 +3,7 @@ package com.annpocoyo.apdiscordintegration;
 import com.annpocoyo.apdiscordintegration.config.ConfigManager;
 import com.annpocoyo.apdiscordintegration.minecraft.McInterface;
 import com.annpocoyo.apdiscordintegration.minecraft.McInterfaceImpl;
+import com.annpocoyo.apdiscordintegration.minecraft.event.McBACAPAdvancementMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McGameMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McMessageEvent;
@@ -23,6 +24,7 @@ import com.annpocoyo.apdiscordintegration.util.ChatFormat;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
 
@@ -108,6 +110,16 @@ public class SocialBridge {
                 }
                 case McGameMessageEvent event ->
                         socialInterface.sendServerMessage(event.getMessage(), ChatFormat.GAME);
+                case McBACAPAdvancementMessageEvent event -> {
+                    String processedDescription = event.getDescription()
+                            .lines().map("> %s"::formatted).collect(Collectors.joining("\n"));
+                    String message = """
+                            %s
+                            %s
+                            > -# *%s Tab*
+                            """.formatted(event.getMessage(), processedDescription, event.getTab().orElse("Unknown"));
+                    socialInterface.sendServerMessage(message, ChatFormat.GAME);
+                }
                 default ->
                         switchTriggered = false;
             }

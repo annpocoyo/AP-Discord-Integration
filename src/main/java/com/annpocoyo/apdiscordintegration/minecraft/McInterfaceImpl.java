@@ -1,5 +1,6 @@
 package com.annpocoyo.apdiscordintegration.minecraft;
 
+import com.annpocoyo.apdiscordintegration.minecraft.event.McBACAPAdvancementMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McGameMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.McMessageEvent;
 import com.annpocoyo.apdiscordintegration.minecraft.event.lifecycle.ServerStartedEvent;
@@ -18,13 +19,17 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.*;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.annpocoyo.apdiscordintegration.APDiscordIntegration.LOGGER;
 
@@ -215,7 +220,13 @@ public class McInterfaceImpl implements McInterface {
         handler.invoke(new McGameMessageEvent(component.getString()));
     }
     private void tellRawMessage(Component component, CommandSourceStack commandSourceStack) {
-        handler.invoke(new McGameMessageEvent(component.getString()));
+        // Detect BACAP messages
+        BACAPAdvancement advancement = getBACAPAdvancementDetails(component);
+        if (advancement != null)
+            handler.invoke(new McBACAPAdvancementMessageEvent(component.getString(),
+                    advancement.description(), advancement.tabName()));
+        else
+            handler.invoke(new McGameMessageEvent(component.getString()));
     }
     // Players
     private void playerJoin(ServerPlayer serverPlayer) {
@@ -268,6 +279,61 @@ public class McInterfaceImpl implements McInterface {
                 )
                 .append(author.isBot() ? Component.literal(" ").append(botTag) : Component.empty());
     }
+
+    private static @Nullable BACAPAdvancement getBACAPAdvancementDetails(Component message) {
+        // BACAP special handling
+        // This gets the advancement description stuff and calls it under a special custom event
+        if (!(message.getContents() instanceof TranslatableContents translation))
+            return null;
+
+        Component advancementName = null;
+        // This advancement is weird as balls so we give it special handling
+        boolean is65HoursOfWalking = translation.getKey().equals("%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s");
+        switch (translation.getKey()) {
+            // Where the third argument has the hover event
+            case "%1$s has made the advancement %2$s%3$s%4$s",
+                 "%1$s has reached the goal %2$s%3$s%4$s",
+                 "%1$s has completed the challenge %2$s%3$s%4$s",
+                 "%1$s has completed the super challenge %2$s%3$s%4$s",
+                 "%1$s has found the hidden advancement %2$s%3$s%4$s",
+                 "%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s" // 65 Hours of walking
+                 // Probably not really needed, the message already tells you how to do the advancement
+                 // "%1$s has completed every advancement in BlazeandCave's Advancements Pack, earning them the coveted title of %2$s%3$s%4$s"
+                    -> {
+                if (translation.getArgs()[2] instanceof Component)
+                    advancementName = (Component) translation.getArgs()[2];
+            }
+            // Where the fourth argument has the hover event
+            /* Probably not really needed, the message already tells you how to do the advancement
+            case "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s",
+                 "%1$s has completed every advancement in %2$s tab, earning them the advancement %3$s%4$s%5$s" -> {
+                if (translation.getArgs()[3] instanceof Component)
+                    advancementName = (Component) translation.getArgs()[3];
+            } */
+        }
+
+        if (!(advancementName != null &&
+                advancementName.getStyle().getHoverEvent() instanceof HoverEvent.ShowText(Component hoverText)))
+            return null;
+
+        // 65 Hours of Walking special handling, because it's weird as
+        if (is65HoursOfWalking)
+            return new BACAPAdvancement("Walk 1000km. The statistics tab shall no longer be the grindy super challenges tab",
+                    "Statistics"); // NOTE: Yes it's hard coded, deal with it
+
+        // Get the description and tab
+        List<Component> hoverTextParts = hoverText.getSiblings();
+        String tabName = null;
+        if (hoverTextParts.getLast().getContents() instanceof TranslatableContents translatedTab &&
+                translatedTab.getArgs()[0] instanceof Component tabComponent)
+            tabName = tabComponent.getString();
+        String description = hoverTextParts.subList(1, hoverTextParts.size() - 2).stream()
+                .map(Component::getString).collect(Collectors.joining());
+
+        return new BACAPAdvancement(description, tabName);
+    }
+
+    private record BACAPAdvancement(String description, @Nullable String tabName) {}
 
     private void throwIfNotRunning() throws IllegalStateException {
         if (!isRunning())
