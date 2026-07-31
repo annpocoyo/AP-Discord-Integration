@@ -264,6 +264,7 @@ public class McInterfaceImpl implements McInterface {
                                         .append("!")
                         ))
                         .withClickEvent(new ClickEvent.SuggestCommand(author.mentionID() + " "))
+                        .withInsertion(author.mentionID())
                 )
                 .append(author.isBot() ? Component.literal(" ").append(botTag) : Component.empty());
     }
