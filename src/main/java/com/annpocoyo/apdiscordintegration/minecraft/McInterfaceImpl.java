@@ -299,6 +299,7 @@ public class McInterfaceImpl implements McInterface {
                 if (translation.getArgs()[2] instanceof Component)
                     advancementName = (Component) translation.getArgs()[2];
             }
+
             // Where the fourth argument has the hover event
             /* Probably not really needed, the message already tells you how to do the advancement
             case "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s",
@@ -306,6 +307,7 @@ public class McInterfaceImpl implements McInterface {
                 if (translation.getArgs()[3] instanceof Component)
                     advancementName = (Component) translation.getArgs()[3];
             } */
+
             // 65 Hours of walking special handling, because it loves to be unique and special and really annoying
             case "%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s" -> {
                 return new BACAPAdvancement("Walk 1000km. The statistics tab shall no longer be the grindy super challenges tab",
@@ -320,10 +322,10 @@ public class McInterfaceImpl implements McInterface {
         // Get the description and tab
         List<Component> hoverTextParts = hoverText.getSiblings();
         String tabName = null;
-        if (hoverTextParts.getLast().getContents() instanceof TranslatableContents translatedTab &&
-                translatedTab.getArgs()[0] instanceof Component tabComponent)
+        if (hoverTextParts.getLast().getContents() instanceof TranslatableContents translatedTab && // This is usually the tab name
+                translatedTab.getArgs()[0] instanceof Component tabComponent) // Just get the first part of it (without the "Tab)
             tabName = tabComponent.getString();
-        String description = hoverTextParts.subList(1, hoverTextParts.size() - 2).stream()
+        String description = hoverTextParts.subList(1, hoverTextParts.size() - 2).stream() // Need to exclude the name of the Advancement and the Tab Name
                 .map(Component::getString).collect(Collectors.joining());
 
         return new BACAPAdvancement(description, tabName);
