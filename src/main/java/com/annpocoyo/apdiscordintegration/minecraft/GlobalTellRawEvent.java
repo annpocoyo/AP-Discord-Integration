@@ -1,4 +1,4 @@
-package com.annpocoyo.apdiscordintegration.util;
+package com.annpocoyo.apdiscordintegration.minecraft;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;

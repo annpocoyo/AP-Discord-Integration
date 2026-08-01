@@ -1,6 +1,6 @@
 package com.annpocoyo.apdiscordintegration.mixin;
 
-import com.annpocoyo.apdiscordintegration.util.GlobalTellRawEvent;
+import com.annpocoyo.apdiscordintegration.minecraft.GlobalTellRawEvent;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;

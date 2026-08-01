@@ -12,7 +12,6 @@ import com.annpocoyo.apdiscordintegration.minecraft.event.players.McPlayerLeaved
 import com.annpocoyo.apdiscordintegration.social.entities.SocialMessage;
 import com.annpocoyo.apdiscordintegration.social.entities.SocialUser;
 import com.annpocoyo.apdiscordintegration.util.ChatFormat;
-import com.annpocoyo.apdiscordintegration.util.GlobalTellRawEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
