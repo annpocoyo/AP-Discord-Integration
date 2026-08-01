@@ -142,7 +142,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
             LOGGER.warn("Username was censored due to containing a disallowed keyword (Original: {}, Censored: {})",
                     message, parsedName);
 
-        webhook.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setUsername(name)
+        webhook.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setUsername(parsedName)
                 .setSuppressedNotifications(suppressed).queue();
     }
 
