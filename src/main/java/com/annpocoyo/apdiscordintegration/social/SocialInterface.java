@@ -9,6 +9,7 @@ import java.net.URI;
 /**
  * Abstraction layer for anything communicating with social platforms
  * Allows potential support of platforms other than Discord.
+ * Mostly just for easier testing.
  */
 public interface SocialInterface {
     /**

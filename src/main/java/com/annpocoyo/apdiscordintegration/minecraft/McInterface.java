@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Abstraction layer for anything contacting Minecraft
  * Intended to be used to facilitate future multi version support!
+ * Mostly just for easier testing.
  */
 public interface McInterface {
     /**
