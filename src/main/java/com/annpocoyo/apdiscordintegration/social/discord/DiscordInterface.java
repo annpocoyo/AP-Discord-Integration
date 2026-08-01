@@ -91,10 +91,9 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     public void stop(String lastMessage, boolean suppressed) {
         try {
             if (running.get()) {
-                String message = ConfigManager.mainConfig.features.useWebhooks ?
-                        ChatFormat.GAME.getFormatStringFromPlayer().formatted("Server Stopped") :
-                        ChatFormat.GAME.getFormatString().formatted("Server", "Server Stopped");
-                channel.sendMessage(message).setSuppressedNotifications(suppressed).complete(false); // Send Immediately
+                channel.sendMessage(ChatFormat.GAME.format(
+                        "Server", "Server Stopped", ConfigManager.mainConfig.features.useWebhooks
+                )).setSuppressedNotifications(suppressed).complete(false); // Send Immediately
             }
         } catch (RateLimitedException _) {
             LOGGER.warn("Server Stopped Message was rate limited");
@@ -116,23 +115,18 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
     @Override
     public void sendServerMessage(String message, ChatFormat type, boolean suppressed) {
         throwIfNotRunning();
-
-        // TODO: definitely take this into its own method (maybe inside of ChatFormat?).
-        String formattedMessage = ConfigManager.mainConfig.features.useWebhooks ?
-                (type.isForceNoWebhook() ? type.getFormatStringFromPlayer().formatted("Server", message) :
-                        type.getFormatStringFromPlayer().formatted(message)) :
-                type.getFormatString().formatted("Server", message);
-
-        channel.sendMessage(formattedMessage).setSuppressedNotifications(suppressed).queue();
+        channel.sendMessage(type.format(
+                "Server", message, ConfigManager.mainConfig.features.useWebhooks
+        )).setSuppressedNotifications(suppressed).queue();
     }
 
     @Override
     public void sendPlayerMessage(String message, String name, ChatFormat type, @Nullable URI pfp, boolean suppressed) {
-        if (!ConfigManager.mainConfig.features.useWebhooks || type.isForceNoWebhook()) {
-            String formatString = ConfigManager.mainConfig.features.useWebhooks ?
-                    type.getFormatStringFromPlayer() :
-                    type.getFormatString();
-            channel.sendMessage(formatString.formatted(name, message)).setSuppressedNotifications(suppressed).queue();
+        String formattedMessage = type.format(
+                name, message, ConfigManager.mainConfig.features.useWebhooks
+        );
+        if (!ConfigManager.mainConfig.features.useWebhooks || type.forceNoWebhook()) {
+            channel.sendMessage(formattedMessage).setSuppressedNotifications(suppressed).queue();
             return;
         }
 
@@ -142,7 +136,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
             LOGGER.warn("Username was censored due to containing a disallowed keyword (Original: {}, Censored: {})",
                     message, parsedName);
 
-        webhook.sendMessage(type.getFormatStringFromPlayer().formatted(message)).setUsername(parsedName)
+        webhook.sendMessage(formattedMessage).setUsername(parsedName)
                 .setSuppressedNotifications(suppressed).queue();
     }
 
