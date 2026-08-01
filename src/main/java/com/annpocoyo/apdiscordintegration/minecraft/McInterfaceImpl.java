@@ -287,16 +287,13 @@ public class McInterfaceImpl implements McInterface {
             return null;
 
         Component advancementName = null;
-        // This advancement is weird as balls so we give it special handling
-        boolean is65HoursOfWalking = translation.getKey().equals("%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s");
         switch (translation.getKey()) {
             // Where the third argument has the hover event
             case "%1$s has made the advancement %2$s%3$s%4$s",
                  "%1$s has reached the goal %2$s%3$s%4$s",
                  "%1$s has completed the challenge %2$s%3$s%4$s",
                  "%1$s has completed the super challenge %2$s%3$s%4$s",
-                 "%1$s has found the hidden advancement %2$s%3$s%4$s",
-                 "%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s" // 65 Hours of walking
+                 "%1$s has found the hidden advancement %2$s%3$s%4$s"
                  // Probably not really needed, the message already tells you how to do the advancement
                  // "%1$s has completed every advancement in BlazeandCave's Advancements Pack, earning them the coveted title of %2$s%3$s%4$s"
                     -> {
@@ -310,16 +307,16 @@ public class McInterfaceImpl implements McInterface {
                 if (translation.getArgs()[3] instanceof Component)
                     advancementName = (Component) translation.getArgs()[3];
             } */
+            // 65 Hours of walking special handling, because it loves to be unique and special and really annoying
+            case "%1$s has found the hidden advancement %2$s%3$s%4$s%5$s%6$s" -> {
+                return new BACAPAdvancement("Walk 1000km. The statistics tab shall no longer be the grindy super challenges tab",
+                        "Statistics"); // NOTE: Yes it's hard coded, deal with it
+            }
         }
 
         if (!(advancementName != null &&
                 advancementName.getStyle().getHoverEvent() instanceof HoverEvent.ShowText(Component hoverText)))
             return null;
-
-        // 65 Hours of Walking special handling, because it's weird as
-        if (is65HoursOfWalking)
-            return new BACAPAdvancement("Walk 1000km. The statistics tab shall no longer be the grindy super challenges tab",
-                    "Statistics"); // NOTE: Yes it's hard coded, deal with it
 
         // Get the description and tab
         List<Component> hoverTextParts = hoverText.getSiblings();
