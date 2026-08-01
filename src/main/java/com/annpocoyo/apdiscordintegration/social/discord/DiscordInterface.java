@@ -92,7 +92,7 @@ public class DiscordInterface extends ListenerAdapter implements SocialInterface
         try {
             if (running.get()) {
                 channel.sendMessage(ChatFormat.GAME.format(
-                        "Server", "Server Stopped", ConfigManager.mainConfig.features.useWebhooks
+                        "Server", lastMessage, ConfigManager.mainConfig.features.useWebhooks
                 )).setSuppressedNotifications(suppressed).complete(false); // Send Immediately
             }
         } catch (RateLimitedException _) {

@@ -94,14 +94,14 @@ public interface SocialInterface {
     void stop();
     /**
      * Stop Bridge
-     * @param lastMessage Message to send right before shut down.
+     * @param lastMessage Message to send right before shut down. Is sent as a {@link ChatFormat#GAME} message.
      */
     default void stop(String lastMessage) {
         stop(lastMessage, false);
     }
     /**
      * Stop Bridge
-     * @param lastMessage Message to send right before shut down.
+     * @param lastMessage Message to send right before shut down. Is sent as a {@link ChatFormat#GAME} message.
      * @param suppressed If true, the message will attempt to not create push notifications
      */
     void stop(String lastMessage, boolean suppressed);
