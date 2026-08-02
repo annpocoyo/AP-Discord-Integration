@@ -3,6 +3,7 @@ package com.annpocoyo.apdiscordintegration.config;
 import com.annpocoyo.apdiscordintegration.APDiscordIntegration;
 import me.fzzyhmstrs.fzzy_config.annotations.Comment;
 import me.fzzyhmstrs.fzzy_config.annotations.LiteralString;
+import me.fzzyhmstrs.fzzy_config.annotations.NonSync;
 import me.fzzyhmstrs.fzzy_config.annotations.Version;
 import me.fzzyhmstrs.fzzy_config.api.SaveType;
 import me.fzzyhmstrs.fzzy_config.config.Config;
@@ -18,8 +19,9 @@ public class MainConfig extends Config {
 
     public General general = new General();
     public static class General extends ConfigSection {
+        @NonSync
         @LiteralString
-        @Comment("Provide the bot token for the bot account that will be controlled by this mod! YOU NEED TO CHANGE THIS FOR THE BOT TO WORK!")
+        @Comment("DO NOT SHARE IN ANY CIRCUMSTANCES, THIS IS A PASSWORD! Provide the bot token for the bot account that will be controlled by this mod! YOU NEED TO CHANGE THIS FOR THE BOT TO WORK!")
         public ValidatedString botToken = new ValidatedString("INSERT BOT TOKEN HERE");
 
         @Comment("ID of channel to be bridged to Minecraft. Can be found by right-clicking a channel while in Developer Mode.")
