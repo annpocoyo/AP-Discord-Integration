@@ -188,14 +188,14 @@ public class SocialBridge {
     private boolean enqueueMcEvent(McEvent event) {
         boolean enqueued = mcQueue.offer(event);
         if (!enqueued) {
-            LOGGER.warn("An MC Event ({}) has been dropped due to lack of space in queue, is something happening?", event);
+            LOGGER.warn("A MC Event ({}) has been dropped due to lack of space in queue, is something happening?", event);
         }
         return enqueued;
     }
     private boolean enqueueSocialEvent(SocialEvent event) {
         boolean enqueued = socialQueue.offer(event);
         if (!enqueued) {
-            LOGGER.warn("An Social Event ({}) has been dropped due to lack of space in queue, is something happening?", event);
+            LOGGER.warn("A Social Event ({}) has been dropped due to lack of space in queue, is something happening?", event);
         }
         return enqueued;
     }
@@ -209,7 +209,7 @@ public class SocialBridge {
                 mcQueueExecutor.shutdownNow();
                 socialQueueExecutor.shutdownNow();
 
-                LOGGER.info("Signaling to other components...");
+                LOGGER.info("Signalling to other components...");
                 mcInterface.stop();
                 socialInterface.stop("Server Stopped", true);
             }
