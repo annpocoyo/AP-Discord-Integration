@@ -208,9 +208,9 @@ public class McInterfaceImpl implements McInterface {
         handler.invoke(new McMessageEvent(playerChatMessage.signedContent(), convertBoundToType(bound), serverPlayer.getPlainTextName()));
     }
     private void commandMessage(PlayerChatMessage playerChatMessage, CommandSourceStack commandSourceStack, ChatType.Bound bound) {
-        String playerName = commandSourceStack.isPlayer() ?
-                Objects.requireNonNull(commandSourceStack.getPlayer()).getPlainTextName() : null;
-        handler.invoke(new McMessageEvent(playerChatMessage.signedContent(), convertBoundToType(bound), playerName));
+        if (commandSourceStack.isPlayer())
+                return; // The chatMessage() function can handle it instead.
+        handler.invoke(new McMessageEvent(playerChatMessage.signedContent(), convertBoundToType(bound)));
     }
     private void gameMessage(MinecraftServer minecraftServer, Component component, boolean overlay) {
         if (component.contains(discordTag))
